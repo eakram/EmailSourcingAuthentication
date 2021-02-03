@@ -2,7 +2,7 @@ package com.lumata.visume.config.msal;
 
 import java.util.Date;
 
-class StateData {
+public class StateData {
     private String nonce;
     private Date expirationDate;
 
@@ -11,11 +11,11 @@ class StateData {
         this.expirationDate = expirationDate;
     }
 
-    String getNonce() {
+    public String getNonce() {
         return nonce;
     }
 
-    Date getExpirationDate() {
+    public Date getExpirationDate() {
         return expirationDate;
     }
 }

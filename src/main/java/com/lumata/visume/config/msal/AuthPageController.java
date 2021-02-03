@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.lumata.visume.service.MsalAuthenticationHelperService;
+import com.lumata.visume.service.impl.MsalAuthenticationHelperServiceImpl;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.aad.msal4j.MsalInteractionRequiredException;
 import com.nimbusds.jwt.JWTParser;
@@ -29,8 +31,8 @@ import org.springframework.web.servlet.ModelAndView;
 public class AuthPageController {
 
     @Autowired
-    MsalAadAuthHelper msalAadAuthHelper;
-
+    MsalAuthenticationHelperService msalAadAuthHelperService;
+	
     @RequestMapping("/secure/aad")
     public ModelAndView securePage(HttpServletRequest httpRequest) throws ParseException {
         ModelAndView mav = new ModelAndView("auth_page");
@@ -59,7 +61,7 @@ public class AuthPageController {
         IAuthenticationResult result;
         ModelAndView mav;
         try {
-            result = msalAadAuthHelper.getAuthResultBySilentFlow(httpRequest, httpResponse);
+            result = msalAadAuthHelperService.getAuthResultBySilentFlow(httpRequest, httpResponse);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof MsalInteractionRequiredException) {
 
@@ -69,10 +71,10 @@ public class AuthPageController {
                 String nonce = UUID.randomUUID().toString();
 
                 SessionManagementHelper.storeStateAndNonceInSession(httpRequest.getSession(), state, nonce);
-                String authorizationCodeUrl = msalAadAuthHelper.getAuthorizationCodeUrl(
+                String authorizationCodeUrl = msalAadAuthHelperService.getAuthorizationCodeUrl(
                         httpRequest.getParameter("claims"),
                         "Main.Read",
-                        msalAadAuthHelper.getRedirectUriGraph(),
+                        ((MsalAuthenticationHelperServiceImpl)msalAadAuthHelperService).getRedirectUriGraph(),
                         state,
                         nonce);
 
@@ -106,7 +108,7 @@ public class AuthPageController {
 
     private String getUserInfoFromGraph(String accessToken) throws Exception {
         // Microsoft Graph user endpoint
-        URL url = new URL(msalAadAuthHelper.getMsGraphEndpointHost() + "v1.0/me");
+        URL url = new URL(((MsalAuthenticationHelperServiceImpl)msalAadAuthHelperService).getMsGraphEndpointHost() + "v1.0/me");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
         // Set the appropriate header fields in the request header.

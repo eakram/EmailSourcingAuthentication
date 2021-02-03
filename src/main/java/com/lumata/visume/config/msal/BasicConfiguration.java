@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * values by grabbing them from application.properties file
  */
 @Component
-class BasicConfiguration{
+public class BasicConfiguration{
 
 	private static final Logger logger = LoggerFactory.getLogger(BasicConfiguration.class);
 	

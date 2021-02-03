@@ -1,5 +1,4 @@
-/*
-package com.lumata.visume.config.msal;
+package com.lumata.visume.service.impl;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -13,11 +12,22 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
 import javax.annotation.PostConstruct;
 import javax.naming.ServiceUnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.lumata.visume.config.msal.BasicConfiguration;
+import com.lumata.visume.config.msal.SessionManagementHelper;
+import com.lumata.visume.config.msal.StateData;
+import com.lumata.visume.service.MsalAuthenticationHelperService;
+import com.lumata.visume.service.MsalRequestFilterService;
 import com.microsoft.aad.msal4j.AuthorizationCodeParameters;
 import com.microsoft.aad.msal4j.AuthorizationRequestUrlParameters;
 import com.microsoft.aad.msal4j.ClientCredentialFactory;
@@ -35,22 +45,12 @@ import com.nimbusds.openid.connect.sdk.AuthenticationResponse;
 import com.nimbusds.openid.connect.sdk.AuthenticationResponseParser;
 import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+@Service
+public class MsalAuthenticationHelperServiceImpl implements MsalAuthenticationHelperService {
 
-
-
-//Helpers for acquiring authorization codes and tokens from AAD
-
-@Component("msalAadAuthHelper")
-public class MsalAadAuthHelper {
-	private static final Logger logger = LoggerFactory.getLogger(MsalAadAuthHelper.class);
+private static final Logger logger = LoggerFactory.getLogger(MsalAuthenticationHelperServiceImpl.class);
 	
-    public static final String PRINCIPAL_SESSION_NAME = "principal";
-    public static final String TOKEN_CACHE_SESSION_ATTRIBUTE = "token_cache";
-
+    
     private String clientId;
     private String clientSecret;
     private String authority;
@@ -60,7 +60,10 @@ public class MsalAadAuthHelper {
 
     @Autowired
     BasicConfiguration configuration;
-
+    
+    @Autowired
+    MsalRequestFilterService msalRequestFilterService;
+    
     @PostConstruct
     public void init() {
         try {
@@ -76,8 +79,9 @@ public class MsalAadAuthHelper {
 		}
     }
 
-    void processAuthenticationCodeRedirect(HttpServletRequest httpRequest, String currentUri, String fullUrl)
-            throws Throwable {
+	@Override
+	public void processAuthenticationCodeRedirect(HttpServletRequest httpRequest, String currentUri, String fullUrl)
+			throws Throwable {
 
         Map<String, List<String>> params = new HashMap<String, List<String>>();
         for (Object key : httpRequest.getParameterMap().keySet()) {
@@ -87,7 +91,7 @@ public class MsalAadAuthHelper {
         StateData stateData = SessionManagementHelper.validateState(httpRequest.getSession(), params.get(SessionManagementHelper.STATE).get(0));
 
         AuthenticationResponse authResponse = AuthenticationResponseParser.parse(new URI(fullUrl), params);
-        if (MsalAadAuthHelper.isAuthenticationSuccessful(authResponse)) {
+        if (MsalAuthenticationHelperServiceImpl.isAuthenticationSuccessful(authResponse)) {
             AuthenticationSuccessResponse oidcResponse = (AuthenticationSuccessResponse) authResponse;
             // validate that OIDC Auth Response matches Code Flow (contains only requested artifacts)
             validateAuthRespMatchesAuthCodeFlow(oidcResponse);
@@ -109,8 +113,9 @@ public class MsalAadAuthHelper {
         }
     }
 
-    IAuthenticationResult getAuthResultBySilentFlow(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
-            throws Throwable {
+	@Override
+	public IAuthenticationResult getAuthResultBySilentFlow(HttpServletRequest httpRequest,
+			HttpServletResponse httpResponse) throws Throwable {
 
         IAuthenticationResult result =  SessionManagementHelper.getAuthSessionObject(httpRequest);
 
@@ -133,8 +138,8 @@ public class MsalAadAuthHelper {
 
         return updatedResult;
     }
-
-    private void validateNonce(StateData stateData, String nonce) throws Exception {
+    
+	private void validateNonce(StateData stateData, String nonce) throws Exception {
         if (nonce == null || nonce.isEmpty() || !nonce.equals(stateData.getNonce())) {
             throw new Exception(SessionManagementHelper.FAILED_TO_VALIDATE_MESSAGE + "could not validate nonce");
         }
@@ -151,8 +156,9 @@ public class MsalAadAuthHelper {
         }
     }
 
-    void sendAuthRedirect(HttpServletRequest httpRequest, HttpServletResponse httpResponse, String scope, String redirectURL)
-            throws IOException {
+	@Override
+	public void sendAuthRedirect(HttpServletRequest httpRequest, HttpServletResponse httpResponse, String scope,
+			String redirectURL) throws IOException {
 
         // state parameter to validate response from Authorization server and nonce parameter to validate idToken
         String state = UUID.randomUUID().toString();
@@ -165,8 +171,9 @@ public class MsalAadAuthHelper {
         httpResponse.sendRedirect(authorizationCodeUrl);
     }
 
-    String getAuthorizationCodeUrl(String claims, String scope, String registeredRedirectURL, String state, String nonce)
-            throws MalformedURLException {
+	@Override
+	public String getAuthorizationCodeUrl(String claims, String scope, String registeredRedirectURL, String state,
+			String nonce) throws MalformedURLException {
 
         String updatedScopes = scope == null ? "" : scope;
 
@@ -185,6 +192,7 @@ public class MsalAadAuthHelper {
 
         return pca.getAuthorizationRequestUrl(parameters).toString();
     }
+    
 
     private IAuthenticationResult getAuthResultByAuthCode(
             HttpServletRequest httpServletRequest,
@@ -224,7 +232,7 @@ public class MsalAadAuthHelper {
                 build();
     }
 
-    public static boolean isAuthenticationSuccessful(AuthenticationResponse authResponse) {
+    private static boolean isAuthenticationSuccessful(AuthenticationResponse authResponse) {
         return authResponse instanceof AuthenticationSuccessResponse;
     }
 
@@ -240,5 +248,3 @@ public class MsalAadAuthHelper {
         return msGraphEndpointHost;
     }
 }
-
-*/
