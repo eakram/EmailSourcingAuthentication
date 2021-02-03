@@ -18,7 +18,16 @@ import javax.naming.ServiceUnavailableException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.microsoft.aad.msal4j.*;
+import com.microsoft.aad.msal4j.AuthorizationCodeParameters;
+import com.microsoft.aad.msal4j.AuthorizationRequestUrlParameters;
+import com.microsoft.aad.msal4j.ClientCredentialFactory;
+import com.microsoft.aad.msal4j.ConfidentialClientApplication;
+import com.microsoft.aad.msal4j.IAuthenticationResult;
+import com.microsoft.aad.msal4j.IConfidentialClientApplication;
+import com.microsoft.aad.msal4j.Prompt;
+import com.microsoft.aad.msal4j.PublicClientApplication;
+import com.microsoft.aad.msal4j.ResponseMode;
+import com.microsoft.aad.msal4j.SilentParameters;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse;
@@ -35,7 +44,7 @@ import org.springframework.stereotype.Component;
 /**
  * Helpers for acquiring authorization codes and tokens from AAD
  */
-@Component
+@Component("msalAadAuthHelper")
 public class MsalAadAuthHelper {
 	private static final Logger logger = LoggerFactory.getLogger(MsalAadAuthHelper.class);
 	
@@ -63,14 +72,14 @@ public class MsalAadAuthHelper {
             msGraphEndpointHost = configuration.getMsGraphEndpointHost();
 		} catch (Exception e) {
 			logger.error("Error in AuthHelper init, {}", e);
-			throw e;
+			
 		}
     }
 
     void processAuthenticationCodeRedirect(HttpServletRequest httpRequest, String currentUri, String fullUrl)
             throws Throwable {
 
-        Map<String, List<String>> params = new HashMap<>();
+        Map<String, List<String>> params = new HashMap<String, List<String>>();
         for (Object key : httpRequest.getParameterMap().keySet()) {
         	params.put((String)key, Collections.<String>singletonList((String)httpRequest.getParameterMap().get((String)key)));
         }

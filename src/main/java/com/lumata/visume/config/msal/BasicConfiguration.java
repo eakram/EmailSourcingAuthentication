@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * values by grabbing them from application.properties file
  */
 @Component
-class BasicConfiguration {
+class BasicConfiguration{
 
 	private static final Logger logger = LoggerFactory.getLogger(BasicConfiguration.class);
 	
@@ -39,7 +39,7 @@ class BasicConfiguration {
         	msGraphEndpointHost = config.getProperty("aad.msGraphEndpointHost");
 		} catch (Exception e) {
 			logger.error("Error in loading MSAL AAD properties, {}", e);
-			throw e;
+			
 		}
     	
     }
@@ -95,4 +95,5 @@ class BasicConfiguration {
     public String getMsGraphEndpointHost(){
         return msGraphEndpointHost;
     }
+    
 }

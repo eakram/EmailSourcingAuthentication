@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.support.SpringBeanAutowiringSupport;
 
@@ -32,8 +34,9 @@ import com.microsoft.aad.msal4j.MsalException;
  * Processes incoming requests based on auth status
  */
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 @ComponentScan(basePackages = "com.lumata.visume.*")
-public class MsalAadAuthFilter implements Filter {
+public class MsalAadAuthFilter implements Filter  {
 
 	private static final Logger logger = LoggerFactory.getLogger(MsalAadAuthFilter.class);
 	
@@ -41,6 +44,7 @@ public class MsalAadAuthFilter implements Filter {
 
     
     @Autowired
+    //@Qualifier("msalAadAuthHelper")
     MsalAadAuthHelper msalAadAuthHelper;
 
     @Override
@@ -49,12 +53,14 @@ public class MsalAadAuthFilter implements Filter {
         if (request instanceof HttpServletRequest) {
             HttpServletRequest httpRequest = (HttpServletRequest) request;
             HttpServletResponse httpResponse = (HttpServletResponse) response;
+			
 			/*
 			 * if (msalAadAuthHelper == null) { ServletContext context =
 			 * httpRequest.getSession().getServletContext();
 			 * SpringBeanAutowiringSupport.processInjectionBasedOnServletContext(this,
 			 * context); }
 			 */
+			 
             try {
                 String currentUri = httpRequest.getRequestURL().toString();
                 String path = httpRequest.getServletPath();
@@ -93,6 +99,7 @@ public class MsalAadAuthFilter implements Filter {
                     updateAuthDataUsingSilentFlow(httpRequest, httpResponse);
                 }
             } catch (MsalException authException) {
+            	logger.error("Error, {}", authException.getMessage());
                 // something went wrong (like expiration or revocation of token)
                 // we should invalidate AuthData stored in session and redirect to Authorization server
                 SessionManagementHelper.removePrincipalFromSession(httpRequest);
@@ -103,6 +110,7 @@ public class MsalAadAuthFilter implements Filter {
                         msalAadAuthHelper.getRedirectUriSignIn());
                 return;
             } catch (Throwable exc) {
+            	logger.error("Error, {}", exc.getMessage());
                 httpResponse.setStatus(500);
                 System.out.println(exc.getMessage());
                 request.setAttribute("error", exc.getMessage());
@@ -141,18 +149,12 @@ public class MsalAadAuthFilter implements Filter {
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
-    	//SpringBeanAutowiringSupport.processInjectionBasedOnCurrentContext(this);
-
-		logger.info("MsalAadAuthFilter init");		
-		/*
-		 * authHelper = WebApplicationContextUtils.
-		 * getRequiredWebApplicationContext(filterConfig.getServletContext()).
-		 * getBean(MsalAadAuthHelper.class);
-		 */
+		logger.info("MsalAadAuthFilter bean initiated");
 	}
 
 	@Override
 	public void destroy() {
-		logger.info("MsalAadAuthFilter destroy");
+		logger.info("MsalAadAuthFilter bean destroyed");
 	}
+    
 }
