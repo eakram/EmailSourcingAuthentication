@@ -38,6 +38,8 @@ import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 
@@ -45,6 +47,7 @@ import org.springframework.stereotype.Component;
  * Helpers for acquiring authorization codes and tokens from AAD
  */
 @Component("msalAadAuthHelper")
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class MsalAadAuthHelper {
 	private static final Logger logger = LoggerFactory.getLogger(MsalAadAuthHelper.class);
 	
